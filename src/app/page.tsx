@@ -591,7 +591,7 @@ export default function GeradorReadme() {
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        code({ className, children, ...props }) {
+                        code({ className, children, ...props }: { className?: string; children?: React.ReactNode }) {
                           const match = /language-(\w+)/.exec(className || "")
                           return match ? (
                             <SyntaxHighlighter
