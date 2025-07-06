@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   AlertCircle,
   CheckCircle,
@@ -23,9 +24,15 @@ import {
   RotateCcw,
   Clock,
   ExternalLink,
+  Eye,
+  Code,
 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { toast } from "sonner"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism"
 
 interface InfoRepositorio {
   name: string
@@ -55,6 +62,7 @@ export default function GeradorReadme() {
   const [erro, setErro] = useState("")
   const [historico, setHistorico] = useState<HistoricoItem[]>([])
   const [mostrarHistorico, setMostrarHistorico] = useState(false)
+  const [abaAtiva, setAbaAtiva] = useState("codigo")
 
   // Carregar histórico do localStorage ao inicializar
   useEffect(() => {
@@ -513,7 +521,7 @@ export default function GeradorReadme() {
           </Card>
         )}
 
-        {/* Generated README */}
+        {/* Generated README with Preview */}
         {readmeGerado && (
           <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
             <CardHeader className="pb-6">
@@ -550,13 +558,108 @@ export default function GeradorReadme() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-6 max-h-[500px] overflow-y-auto">
-                <Textarea
-                  value={readmeGerado}
-                  readOnly
-                  className="min-h-[400px] font-mono text-sm bg-transparent border-none resize-none focus:ring-0 text-neutral-800 leading-relaxed"
-                />
-              </div>
+              <Tabs value={abaAtiva} onValueChange={setAbaAtiva} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 bg-neutral-100 p-1 rounded-lg">
+                  <TabsTrigger
+                    value="codigo"
+                    className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                  >
+                    <Code className="w-4 h-4" />
+                    Código Markdown
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="preview"
+                    className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Preview
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="codigo" className="mt-6">
+                  <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-6 max-h-[600px] overflow-y-auto">
+                    <Textarea
+                      value={readmeGerado}
+                      readOnly
+                      className="min-h-[500px] font-mono text-sm bg-transparent border-none resize-none focus:ring-0 text-neutral-800 leading-relaxed"
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="preview" className="mt-6">
+                  <div className="bg-white border border-neutral-200 rounded-xl p-8 max-h-[600px] overflow-y-auto prose prose-neutral max-w-none">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        code({ node, inline, className, children, ...props }) {
+                          const match = /language-(\w+)/.exec(className || "")
+                          return !inline && match ? (
+                            <SyntaxHighlighter
+                              style={oneLight}
+                              language={match[1]}
+                              PreTag="div"
+                              className="rounded-lg"
+                              {...props}
+                            >
+                              {String(children).replace(/\n$/, "")}
+                            </SyntaxHighlighter>
+                          ) : (
+                            <code
+                              className="bg-neutral-100 text-neutral-800 px-1.5 py-0.5 rounded text-sm font-mono"
+                              {...props}
+                            >
+                              {children}
+                            </code>
+                          )
+                        },
+                        h1: ({ children }) => (
+                          <h1 className="text-3xl font-bold text-neutral-900 mb-6 pb-3 border-b border-neutral-200">
+                            {children}
+                          </h1>
+                        ),
+                        h2: ({ children }) => (
+                          <h2 className="text-2xl font-semibold text-neutral-800 mt-8 mb-4">{children}</h2>
+                        ),
+                        h3: ({ children }) => (
+                          <h3 className="text-xl font-semibold text-neutral-800 mt-6 mb-3">{children}</h3>
+                        ),
+                        p: ({ children }) => <p className="text-neutral-700 leading-relaxed mb-4">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc list-inside space-y-2 mb-4">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside space-y-2 mb-4">{children}</ol>,
+                        li: ({ children }) => <li className="text-neutral-700">{children}</li>,
+                        blockquote: ({ children }) => (
+                          <blockquote className="border-l-4 border-neutral-300 pl-4 italic text-neutral-600 my-4">
+                            {children}
+                          </blockquote>
+                        ),
+                        table: ({ children }) => (
+                          <div className="overflow-x-auto my-6">
+                            <table className="min-w-full border border-neutral-200 rounded-lg">{children}</table>
+                          </div>
+                        ),
+                        th: ({ children }) => (
+                          <th className="border border-neutral-200 px-4 py-2 bg-neutral-50 font-semibold text-left">
+                            {children}
+                          </th>
+                        ),
+                        td: ({ children }) => <td className="border border-neutral-200 px-4 py-2">{children}</td>,
+                        a: ({ children, href }) => (
+                          <a
+                            href={href}
+                            className="text-neutral-900 underline hover:text-neutral-700 transition-colors"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {children}
+                          </a>
+                        ),
+                      }}
+                    >
+                      {readmeGerado}
+                    </ReactMarkdown>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         )}
