@@ -212,7 +212,7 @@ export default function GeradorReadme() {
       toast.success("Copiado com sucesso!", {
         description: "README copiado para área de transferência",
       })
-    } catch (err) {
+    } catch {
       toast.error("Erro ao copiar", {
         description: "Não foi possível copiar para a área de transferência",
       })
@@ -591,9 +591,9 @@ export default function GeradorReadme() {
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        code({ inline, className, children, ...props }) {
+                        code({ className, children, ...props }) {
                           const match = /language-(\w+)/.exec(className || "")
-                          return !inline && match ? (
+                          return match ? (
                             <SyntaxHighlighter
                               style={oneLight}
                               language={match[1]}
