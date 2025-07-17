@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -64,7 +66,6 @@ export default function GeradorReadme() {
   const [mostrarHistorico, setMostrarHistorico] = useState(false)
   const [abaAtiva, setAbaAtiva] = useState("codigo")
 
-  // Carregar histórico do localStorage ao inicializar
   useEffect(() => {
     const historicoSalvo = localStorage.getItem("readme-generator-historico")
     if (historicoSalvo) {
@@ -76,7 +77,6 @@ export default function GeradorReadme() {
     }
   }, [])
 
-  // Salvar histórico no localStorage sempre que mudar
   useEffect(() => {
     localStorage.setItem("readme-generator-historico", JSON.stringify(historico))
   }, [historico])
@@ -91,9 +91,7 @@ export default function GeradorReadme() {
     }
 
     setHistorico((prev) => {
-      // Remove item duplicado se existir (mesmo URL)
       const filtrado = prev.filter((item) => item.url !== url)
-      // Adiciona no início e mantém apenas os últimos 10
       return [novoItem, ...filtrado].slice(0, 10)
     })
   }
@@ -187,7 +185,6 @@ export default function GeradorReadme() {
       const data = await response.json()
       setReadmeGerado(data.readme)
 
-      // Atualizar histórico com README gerado
       salvarNoHistorico(urlRepo, infoRepo, data.readme)
 
       toast.success("README gerado com sucesso!", {
@@ -247,26 +244,22 @@ export default function GeradorReadme() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-100">
-      {/* Background Pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-12 space-y-12">
-        {/* Header */}
         <div className="text-center space-y-6">
           <div className="inline-flex items-center justify-center p-3 bg-neutral-900 rounded-2xl shadow-lg">
             <FileText className="w-8 h-8 text-white" />
           </div>
           <div className="space-y-4">
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-neutral-900 via-neutral-700 to-neutral-900 bg-clip-text text-transparent">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-neutral-900 via-neutral-700 to-neutral-900 bg-clip-text text-transparent">
               Gerador de README
             </h1>
-            <p className="text-xl text-neutral-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl text-neutral-600 max-w-3xl mx-auto leading-relaxed px-4 sm:px-0">
               Transforme qualquer repositório em documentação profissional com o poder da inteligência artificial
             </p>
           </div>
         </div>
 
-        {/* Histórico Toggle */}
         {historico.length > 0 && (
           <div className="flex justify-center">
             <Button
@@ -280,11 +273,10 @@ export default function GeradorReadme() {
           </div>
         )}
 
-        {/* Histórico */}
         {mostrarHistorico && historico.length > 0 && (
           <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
             <CardHeader className="pb-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-neutral-100 rounded-lg">
                     <Clock className="w-5 h-5 text-neutral-700" />
@@ -311,7 +303,7 @@ export default function GeradorReadme() {
                 {historico.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl border border-neutral-200 hover:bg-neutral-100 transition-colors"
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-neutral-50 rounded-xl border border-neutral-200 hover:bg-neutral-100 transition-colors"
                   >
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2">
@@ -342,7 +334,7 @@ export default function GeradorReadme() {
                     <Button
                       variant="outline"
                       onClick={() => carregarDoHistorico(item)}
-                      className="border-neutral-300 text-neutral-700 hover:bg-white px-4 py-2 rounded-lg font-medium bg-transparent ml-4"
+                      className="border-neutral-300 text-neutral-700 hover:bg-white px-4 py-2 rounded-lg font-medium bg-transparent ml-0 mt-3 sm:mt-0"
                     >
                       <RotateCcw className="w-4 h-4 mr-2" />
                       Carregar
@@ -354,7 +346,6 @@ export default function GeradorReadme() {
           </Card>
         )}
 
-        {/* Input Section */}
         <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
           <CardHeader className="pb-6">
             <div className="flex items-center gap-3">
@@ -374,7 +365,7 @@ export default function GeradorReadme() {
               <Label htmlFor="url-repo" className="text-sm font-medium text-neutral-700">
                 URL do Repositório
               </Label>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                   <Input
                     id="url-repo"
@@ -387,7 +378,7 @@ export default function GeradorReadme() {
                 <Button
                   onClick={analisarRepositorio}
                   disabled={analisando}
-                  className="px-8 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="w-full sm:w-auto px-8 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   {analisando ? (
                     <>
@@ -429,8 +420,8 @@ export default function GeradorReadme() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-neutral-500 uppercase tracking-wide">
@@ -521,11 +512,10 @@ export default function GeradorReadme() {
           </Card>
         )}
 
-        {/* Generated README with Preview */}
         {readmeGerado && (
           <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
             <CardHeader className="pb-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-green-100 rounded-lg">
                     <CheckCircle className="w-5 h-5 text-green-700" />
@@ -587,7 +577,7 @@ export default function GeradorReadme() {
                 </TabsContent>
 
                 <TabsContent value="preview" className="mt-6">
-                  <div className="bg-white border border-neutral-200 rounded-xl p-8 max-h-[600px] overflow-y-auto prose prose-neutral max-w-none">
+                  <div className="bg-white border border-neutral-200 rounded-xl p-4 sm:p-8 max-h-[600px] overflow-y-auto prose prose-neutral max-w-none">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
@@ -664,7 +654,6 @@ export default function GeradorReadme() {
           </Card>
         )}
 
-        {/* Footer */}
         <div className="text-center py-8">
           <p className="text-neutral-500 text-sm">
             Desenvolvido usando IA Gemini • Transforme seus repositórios em documentação profissional
