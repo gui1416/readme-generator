@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -34,21 +34,26 @@ import remarkGfm from "remark-gfm"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism"
 
+// Interface atualizada para refletir a resposta da API de análise
 interface InfoRepositorio {
-  name: string
-  description: string
-  language: string
-  topics: string[]
-  hasLicense: boolean
-  hasPackageJson: boolean
-  hasRequirements: boolean
-  structure: string[]
+  repoName: string; // Nome do repositório
+  owner: string; // Proprietário do repositório
+  description: string | null;
+  topics: string[];
+  mainLanguage: string | null; // Linguagem principal detectada
+  fileNames: string[]; // Lista de nomes de arquivos
+  readmeContent: string | null; // Conteúdo do README.md existente
+  packageJsonContent: string | null; // Conteúdo do package.json
+  requirementsTxtContent: string | null; // Conteúdo do requirements.txt
+  licenseType: string | null; // Tipo de licença (e.g., MIT)
+  licenseContent: string | null; // Conteúdo completo da licença
+  repoUrl: string; // URL do repositório
 }
 
 interface HistoricoItem {
   id: string
   url: string
-  info: InfoRepositorio
+  info: InfoRepositorio // Usando a interface atualizada
   readme?: string
   timestamp: number
 }
@@ -63,6 +68,7 @@ export default function GeradorReadme() {
   const [historico, setHistorico] = useState<HistoricoItem[]>([])
   const [mostrarHistorico, setMostrarHistorico] = useState(false)
   const [abaAtiva, setAbaAtiva] = useState("codigo")
+  const [customPromptAddition, setCustomPromptAddition] = useState<string>(''); // Novo estado para o prompt customizado
 
   // Carregar histórico do localStorage ao inicializar
   useEffect(() => {
@@ -106,7 +112,7 @@ export default function GeradorReadme() {
     }
     setErro("")
     toast.success("Análise carregada", {
-      description: `Repositório ${item.info.name} carregado do histórico.`,
+      description: `Repositório ${item.info.repoName} carregado do histórico.`, // Usar info.repoName
     })
   }
 
@@ -123,6 +129,13 @@ export default function GeradorReadme() {
       return
     }
 
+    // Validação de URL mais robusta
+    const githubUrlRegex = /^https:\/\/(www\.)?github\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+)(\/.*)?$/;
+    if (!githubUrlRegex.test(urlRepo)) {
+      setErro("URL do GitHub inválida. Por favor, forneça uma URL de repositório válida (ex: https://github.com/usuario/repositorio).");
+      return;
+    }
+
     setAnalisando(true)
     setErro("")
     setInfoRepo(null)
@@ -136,19 +149,21 @@ export default function GeradorReadme() {
       const response = await fetch("/api/analisar-repo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ urlRepo }),
+        // CORREÇÃO AQUI: Enviar 'urlRepo' com a chave 'repoUrl'
+        body: JSON.stringify({ repoUrl: urlRepo }),
       })
 
       if (!response.ok) {
-        throw new Error("Falha ao analisar repositório")
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Falha ao analisar repositório");
       }
 
-      const data = await response.json()
+      const data: InfoRepositorio = await response.json()
       setInfoRepo(data)
       salvarNoHistorico(urlRepo, data)
 
       toast.success("Repositório analisado com sucesso!", {
-        description: `${data.name} está pronto para gerar README`,
+        description: `${data.repoName} está pronto para gerar README`, // Usar data.repoName
         id: loadingToast,
       })
     } catch (err) {
@@ -177,11 +192,17 @@ export default function GeradorReadme() {
       const response = await fetch("/api/gerar-readme", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ infoRepo, urlRepo }),
+        body: JSON.stringify({
+          ...infoRepo, // Envia todas as informações do repositório
+          // CORREÇÃO AQUI: Enviar 'urlRepo' com a chave 'repoUrl'
+          repoUrl: urlRepo, // Garante que a URL original também seja enviada
+          customPromptAddition, // Envia a adição personalizada ao prompt
+        }),
       })
 
       if (!response.ok) {
-        throw new Error("Falha ao gerar README")
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Falha ao gerar README");
       }
 
       const data = await response.json()
@@ -208,11 +229,18 @@ export default function GeradorReadme() {
 
   const copiarParaClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(readmeGerado)
+      // Usar document.execCommand para compatibilidade com iframes
+      const textarea = document.createElement('textarea');
+      textarea.value = readmeGerado;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
       toast.success("Copiado com sucesso!", {
         description: "README copiado para área de transferência",
       })
     } catch (err) {
+      console.error('Falha ao copiar:', err);
       toast.error("Erro ao copiar", {
         description: "Não foi possível copiar para a área de transferência",
       })
@@ -315,10 +343,10 @@ export default function GeradorReadme() {
                   >
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-neutral-900">{item.info.name}</h4>
-                        {item.info.language && (
+                        <h4 className="font-semibold text-neutral-900">{item.info.repoName}</h4> {/* Usar repoName */}
+                        {item.info.mainLanguage && ( // Usar mainLanguage
                           <Badge variant="secondary" className="text-xs">
-                            {item.info.language}
+                            {item.info.mainLanguage}
                           </Badge>
                         )}
                         {item.readme && <Badge className="bg-green-100 text-green-800 text-xs">README Gerado</Badge>}
@@ -436,7 +464,7 @@ export default function GeradorReadme() {
                     <Label className="text-sm font-medium text-neutral-500 uppercase tracking-wide">
                       Nome do Projeto
                     </Label>
-                    <p className="text-2xl font-bold text-neutral-900">{infoRepo.name}</p>
+                    <p className="text-2xl font-bold text-neutral-900">{infoRepo.repoName}</p> {/* Usar repoName */}
                   </div>
 
                   {infoRepo.description && (
@@ -456,7 +484,7 @@ export default function GeradorReadme() {
                       variant="secondary"
                       className="bg-neutral-100 text-neutral-800 px-3 py-1 text-sm font-medium"
                     >
-                      {infoRepo.language || "Não detectada"}
+                      {infoRepo.mainLanguage || "Não detectada"} {/* Usar mainLanguage */}
                     </Badge>
                   </div>
 
@@ -465,14 +493,14 @@ export default function GeradorReadme() {
                       Tecnologias Detectadas
                     </Label>
                     <div className="flex flex-wrap gap-2">
-                      {infoRepo.hasPackageJson && (
+                      {infoRepo.packageJsonContent && ( // Checar pela presença do conteúdo
                         <Badge className="bg-neutral-900 text-white px-3 py-1">Node.js</Badge>
                       )}
-                      {infoRepo.hasRequirements && (
+                      {infoRepo.requirementsTxtContent && ( // Checar pela presença do conteúdo
                         <Badge className="bg-neutral-900 text-white px-3 py-1">Python</Badge>
                       )}
-                      {infoRepo.hasLicense && <Badge className="bg-neutral-900 text-white px-3 py-1">Licenciado</Badge>}
-                      {!infoRepo.hasPackageJson && !infoRepo.hasRequirements && !infoRepo.hasLicense && (
+                      {infoRepo.licenseType && <Badge className="bg-neutral-900 text-white px-3 py-1">Licenciado</Badge>}
+                      {!infoRepo.packageJsonContent && !infoRepo.requirementsTxtContent && !infoRepo.licenseType && (
                         <span className="text-neutral-500 text-sm">Nenhuma tecnologia específica detectada</span>
                       )}
                     </div>
@@ -496,6 +524,20 @@ export default function GeradorReadme() {
               )}
 
               <Separator className="bg-neutral-200" />
+
+              {/* Novo campo para Custom Prompt Addition */}
+              <div className="space-y-3">
+                <Label htmlFor="custom-prompt" className="text-sm font-medium text-neutral-700">
+                  Instruções Adicionais para a IA (Opcional)
+                </Label>
+                <Textarea
+                  id="custom-prompt"
+                  placeholder="Ex: 'Foque na seção de instalação para usuários Windows.' ou 'Adicione uma seção sobre testes unitários.'"
+                  value={customPromptAddition}
+                  onChange={(e) => setCustomPromptAddition(e.target.value)}
+                  className="min-h-[100px] border-neutral-200 focus:border-neutral-400 focus:ring-neutral-400 rounded-xl"
+                />
+              </div>
 
               <div className="flex justify-center pt-4">
                 <Button
