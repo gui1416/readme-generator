@@ -56,7 +56,9 @@ Gere um README profissional e bem estruturado que ajudaria qualquer desenvolvedo
 `
 
   const { text } = await generateText({
-   model: google("gemini-1.5-flash"),
+   model: google("gemini-1.5-flash", {
+    apiKey: geminiApiKey, // Use a chave da API aqui
+   }),
    prompt,
    maxTokens: 4000,
   })
